@@ -1,0 +1,31 @@
+[
+  {
+    "title": "QR Code Generator",
+    "url": "https://naxa.dev/qr",
+    "description": "빠르고 간편한 QR 코드 생성기",
+    "detail": "사이즈·모양·로고·색상 삽입 기능 제공",
+    "img": "./static/img/qr-naxa_dev.png"
+  },
+  {
+    "title": "Naxa Post – Dev Notes",
+    "url": "https://post.naxa.dev",
+    "description": "개발 메모 & 테스트용 미니 게시판",
+    "detail": "Node.js · Express · SQLite",
+    "img": "./static/img/post.png"
+  },
+  {
+    "title": "m/place Canvas",
+    "url": "https://place.naxa.dev",
+    "description": "실시간 픽셀 협업 캔버스",
+    "detail": "Node.js + Socket.IO 기반",
+    "img": "https://yourcdn.com/images/place.png"
+  },
+  {
+    "title": "개인 블로그",
+    "url": "https://lshwan.com",
+    "description": "내 개발자 여정과 팁 공유",
+    "detail": "PHP · Streamlit · AWS 자동화 내용",
+    "img": "https://yourcdn.com/images/blog.png"
+  }
+]
+
