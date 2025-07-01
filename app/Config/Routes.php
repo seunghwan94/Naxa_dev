@@ -7,3 +7,4 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 $routes->get('/qr', 'Qr::index');
+$routes->get('/mapcenter', 'Mapcenter::index');

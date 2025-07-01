@@ -41,7 +41,9 @@
   <?php if (isset($isQrPage) && $isQrPage): ?>
     <link rel="stylesheet" href="<?= base_url('css/qr.css') ?>">
   <?php endif; ?>
-
+  <?php if (isset($isMapPage) && $isMapPage): ?>
+    <link rel="stylesheet" href="<?= base_url('css/mapcenter.css') ?>">
+  <?php endif; ?>
   <!-- Font Awesome -->
   <link
     rel="stylesheet"
