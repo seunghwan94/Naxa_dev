@@ -1,60 +1,119 @@
-# CodeIgniter 4 Framework
 
-## What is CodeIgniter?
+# Naxa.dev [CodeIgniter4] 
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## 프로젝트 개요
+- CodeIgniter4(CI4) - php 8.1 이상
+- 환경별 개발/운영 분리, 정적/동적 데이터 구조화
+- Nginx 실서버 기준 public/ 디렉토리 배포
 
-This repository holds the distributable version of the framework.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+---
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## 📂 폴더 구조
+```
+/ (프로젝트 루트)
+├── app/
+│   ├── Controllers/
+│   │   └── Home.php
+│   ├── Views/
+│   │   ├── includes/
+│   │   │   ├── header.php
+│   │   │   └── footer.php
+│   │   ├── index.php
+│   │   └── qr.php
+├── public/
+│   ├── css/
+│   │   ├── style.css
+│   │   └── qr.css
+│   ├── static/
+│   │   ├── img/
+│   │   │   ├── logo.png
+│   │   │   └── post.png
+│   │   ├── programs.prod.json
+│   │   └── programs.dev.json
+│   └── favicon.ico
+├── writable/
+│   ├── cache/
+│   ├── logs/
+├── .env
+├── .gitignore
+├── README.md
+```
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+---
 
-## Important Change with index.php
+## 주요 설정 및 트러블슈팅
+### 1. 필수 패키지 및 PHP 환경 준비
+```
+sudo apt update && sudo apt upgrade -y
+sudo apt install nginx php8.3 php8.3-fpm php8.3-cli php8.3-mbstring php8.3-intl php8.3-xml php8.3-mysql php8.3-curl php8.3-zip unzip git -y
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+cd /var/www/html
+sudo git clone https://github.com/seunghwan94/Naxa_dev.git .
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+# 반드시 public/ writable/ 권한 부여(서버 오류 99% 방지!)
+sudo chown -R www-data:www-data /var/www/html
+sudo chmod -R 755 /var/www/html
+sudo chmod -R 777 /var/www/html/writable
+sudo mkdir -p /var/www/html/writable/cache /var/www/html/writable/logs
+sudo chown -R www-data:www-data /var/www/html/writable
+```
 
-**Please** read the user guide for a better explanation of how CI4 works!
+### 2. 환경별 .env 설정 예시
+개발 (로컬)
+```
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost/ci/public/'
+```
+운영 (서버)
+```
+CI_ENVIRONMENT = production
+app.baseURL = 'https://naxa.dev/'
+```
 
-## Repository Management
+### 4. Nginx 배포 예시
+```nginx
+server {
+    listen 80;
+    server_name naxa.dev www.naxa.dev;
+    return 301 https://$host$request_uri;
+}
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+server {
+    listen 443 ssl;
+    server_name naxa.dev www.naxa.dev;
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+    ssl_certificate     /etc/ssl/naxa/cert.pem;
+    ssl_certificate_key /etc/ssl/naxa/private.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
 
-## Contributing
+    root /var/www/html/public;         # ← public으로 변경
+    index index.php index.html;
 
-We welcome contributions from the community.
+    # 정적 파일/라우팅 처리
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;    # CI4 필수!
+    }
 
-Please read the [*Contributing to CodeIgniter*](https://github.com/codeigniter4/CodeIgniter4/blob/develop/CONTRIBUTING.md) section in the development repository.
+    # PHP 처리
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+    }
 
-## Server Requirements
+    # JSON 파일 외부 차단
+    location ~* \.json$ {
+        deny all;
+    }
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+    error_log  /var/log/nginx/naxa.error.log warn;
+    access_log /var/log/nginx/naxa.access.log;
+}
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+```
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+---
 
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## 문의
+- https://naxa.dev
+- https://github.com/seunghwan94/Naxa_dev
