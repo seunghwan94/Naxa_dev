@@ -6,39 +6,23 @@ $naverKey = getenv('NAVER_MAP_KEY');
 <div class="container">
   <h2 class="map-title">🗺️ 지도 중간점 찾기</h2>
 
-  <!-- 🔍 검색·현재위치·모드 -->
-  <div style="margin:1rem 0; display:flex; flex-wrap:wrap; gap:.5rem;">
-    <input id="searchInput"
-           placeholder="장소·주소 검색"
-           style="flex:1 1 250px; padding:.45rem 1rem; border-radius:8px; border:1px solid #ccc;">
-    <button id="search-btn">🔍 검색</button>
-    <button id="loc-btn">📍 현재 위치</button>
-
-    <!-- 4 가지 계산 모드 -->
-    <select id="modeSel" style="padding:.45rem 1rem; border-radius:8px;">
-      <option value="distance">거리(직선)</option>
-      <!-- <option value="subway">지하철</option>
-      <option value="bus">버스</option>
-      <option value="mix">지하철+버스</option> -->
-    </select>
-  </div>
-
   <!-- 🗺️ 지도 -->
   <div id="map-container">
     <div id="map"
          style="width:100%; height:500px; border-radius:18px;
                 overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.1);"></div>
 
-    <!-- 🎨 팔레트 & 리셋·캡처 -->
-    <div class="palette-panel">
+    <!-- 🎨 팔레트 & 리셋·캡처·현재위치 -->
+    <div class="palette-panel" style="margin-top:.75rem; display:flex; flex-wrap:wrap; gap:.5rem;">
       <label for="colorPicker">팔레트:</label>
-      <input type="color" id="colorPicker" value="#6366f1">
+      <input type="color" id="colorPicker">
+      <button id="loc-btn">📍 현재 위치</button>
       <button id="reset-btn">전체 지우기</button>
       <button id="capture-btn">지도 캡처</button>
     </div>
 
     <!-- 📋 좌표 목록 -->
-    <div class="points-list"></div>
+    <div class="points-list" style="margin-top:1rem;"></div>
   </div>
 </div>
 
@@ -56,77 +40,86 @@ $naverKey = getenv('NAVER_MAP_KEY');
 <script defer>
 const API_BASE = '<?= site_url('api') ?>';   // /api/… 경로
 
-function initMap () {
-  /* ───────── 상태 변수 ───────── */
-  const pts    = [];           // {lat,lng,color,marker}
-  const lines  = [];           // naver.maps.Polyline[]
-  let centerMk = null;         // 중간점 마커
-  let curCol   = document.getElementById('colorPicker').value;
+/* ───────── 유틸 : 노란 계열(45°~65°) 제외한 HEX 랜덤 ───────── */
+function randomColor () {
+  let h;
+  do { h = Math.floor(Math.random()*360); } while (45 <= h && h <= 65); // 노란색 제외
+  const s = 0.7 + Math.random()*0.2;   // 0.70–0.90
+  const l = 0.45 + Math.random()*0.15; // 0.45–0.60
 
-  /* ───────── 지도 생성 ───────── */
+  // HSL → RGB → HEX
+  const a = s * Math.min(l, 1 - l);
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function initMap () {
+  /* ───────── 상태 ───────── */
+  const pts = [], lines = [];
+  let centerMk = null;
+
+  let currentColor = randomColor();  // 최초 색
+  let manualMode   = false;          // false → 랜덤, true → 고정
+
+  /* 🎨 팔레트 초기 값 세팅 */
+  const colorPicker = document.getElementById('colorPicker');
+  colorPicker.value = currentColor;
+
+  /* ───────── 지도 ───────── */
   const map = new naver.maps.Map('map', {
-    center: new naver.maps.LatLng(37.5665,126.9780), // (서울 시청)
+    center: new naver.maps.LatLng(37.5665, 126.9780),
     zoom  : 12,
     zoomControl: true,
     zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }
   });
 
-  /* 🎨 팔레트 */
-  document.getElementById('colorPicker').addEventListener('input', e => {
-    curCol = e.target.value;
+  /* 팔레트 변경 → 고정 모드 전환 */
+  colorPicker.addEventListener('input', e => {
+    currentColor = e.target.value;
+    manualMode   = true;
   });
 
   /* 🖱️ 지도 클릭 → 점 추가 */
   naver.maps.Event.addListener(map, 'click', e => {
-    addPoint(e.coord.lat(), e.coord.lng(), curCol);
+    // 랜덤 모드면 새 색 생성 & 팔레트 반영
+    if (!manualMode) {
+      currentColor   = randomColor();
+      colorPicker.value = currentColor;
+    }
+    addPoint(e.coord.lat(), e.coord.lng(), currentColor);
   });
 
   /* 📍 현재 위치 */
   document.getElementById('loc-btn').onclick = () => {
-    if (!navigator.geolocation) return alert('브라우저가 위치 기능을 지원하지 않습니다');
+    if (!navigator.geolocation)
+      return alert('브라우저가 위치 기능을 지원하지 않습니다');
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const { latitude:lat, longitude:lng } = pos.coords;
-        map.setCenter(new naver.maps.LatLng(lat,lng));
+        const { latitude: lat, longitude: lng } = pos.coords;
+        map.setCenter(new naver.maps.LatLng(lat, lng));
         addPoint(lat, lng, '#0ea5e9');
       },
       () => alert('현재 위치를 가져올 수 없습니다')
     );
   };
 
-  /* 🔍 검색 */
-  document.getElementById('search-btn').onclick = () => {
-    const q = document.getElementById('searchInput').value.trim();
-    if (!q) return;
-
-    naver.maps.Service.geocode({ query:q }, (status, res) => {
-      if (status !== naver.maps.Service.Status.OK || !res.result.items.length) {
-        return alert('검색 결과가 없습니다');
-      }
-      const { y:lat, x:lng } = res.result.items[0].point;
-      map.setCenter(new naver.maps.LatLng(+lat, +lng));
-      addPoint(+lat, +lng, curCol);
-    });
-  };
-
-  /* ➕ 점 추가 함수 */
+  /* ➕ 점 추가 */
   function addPoint(lat, lng, color) {
     const marker = new naver.maps.Marker({
-      position : new naver.maps.LatLng(lat,lng),
-      map      : map,
-      draggable: true,
-      icon     : {
-        content:`<div style="width:18px;height:18px;border-radius:50%;
-                          background:${color};border:3px solid #fff;
-                          box-shadow:0 0 0 2px rgba(0,0,0,.4);"></div>`,
-        anchor : new naver.maps.Point(9,9)
-      }
+      position : new naver.maps.LatLng(lat, lng),
+      map, draggable: true,
+      icon:{ content:`<div style="width:18px;height:18px;border-radius:50%;
+                              background:${color};border:3px solid #fff;
+                              box-shadow:0 0 0 2px rgba(0,0,0,.4);"></div>`,
+             anchor:new naver.maps.Point(9,9)}
     });
-
-    const p = { lat, lng, color, marker };
+    const p = {lat,lng,color,marker};
     pts.push(p);
 
-    // 드래그해도 즉시 재계산
     marker.addListener('dragend', () => {
       const pos = marker.getPosition();
       p.lat = pos.lat(); p.lng = pos.lng();
@@ -136,75 +129,61 @@ function initMap () {
     redraw();
   }
 
-  /* 🔄 전체 UI 다시 그리기 */
+  /* 🔄 재렌더 */
   async function redraw() {
-    // 선·중앙 삭제
-    lines.forEach(l => l.setMap(null));
-    lines.length = 0;
+    lines.forEach(l=>l.setMap(null)); lines.length = 0;
     if (centerMk) { centerMk.setMap(null); centerMk = null; }
 
-    // ▶ 중간점 계산 (2개 이상일 때)
     if (pts.length > 1) {
-      const mode = document.getElementById('modeSel').value;
       const resp = await fetch(`${API_BASE}/midpoint`, {
-        method : 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body   : JSON.stringify({
-                    mode,
-                    origins: pts.map(p => [p.lat, p.lng])
-                  })
-      }).then(r=>r.ok ? r.json(): null);
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mode:'distance', origins:pts.map(p=>[p.lat,p.lng])})
+      }).then(r=>r.ok ? r.json() : null);
 
-      if (!resp || !resp.ok) {
-        alert('중간점 계산 실패');
-        return;
-      }
+      if (!resp || !resp.ok) { alert('중간점 계산 실패'); return; }
 
       const { midLat, midLng, paths } = resp;
-
-      // ☆ 중심 마커
       centerMk = new naver.maps.Marker({
-        position: new naver.maps.LatLng(midLat, midLng),
-        map,
-        icon:{ content:`<div style="width:26px;height:26px;border-radius:50%;
-                              background:#facc15;border:3px solid #fff;
-                              box-shadow:0 0 0 2px #f59e0b;"></div>`,
-               anchor : new naver.maps.Point(13,13) }
+        position:new naver.maps.LatLng(midLat, midLng), map,
+        icon:{content:`<div style="width:26px;height:26px;border-radius:50%;
+                                background:#facc15;border:3px solid #fff;
+                                box-shadow:0 0 0 2px #f59e0b;"></div>`,
+              anchor:new naver.maps.Point(13,13)}
       });
 
-      // ☆ 선 그리기
       paths.forEach((path, idx) => {
         lines.push(new naver.maps.Polyline({
-          path: path.map(([lat,lng]) => new naver.maps.LatLng(lat,lng)),
-          strokeColor : pts[idx].color,
-          strokeWeight: 4,
-          strokeOpacity:.8,
-          map
+          path:path.map(([lat,lng])=>new naver.maps.LatLng(lat,lng)),
+          strokeColor:pts[idx].color, strokeWeight:4, strokeOpacity:.8, map
         }));
       });
     }
-
     renderList();
   }
 
-  /* 📝 목록 렌더 */
-  function renderList() {
+  /* 📝 목록 */
+  function renderList(){
     document.querySelector('.points-list').innerHTML =
       pts.map((p,i)=>`
-        <div class="pt-row">
-          <span class="pt-no" style="background:${p.color}">${i+1}</span>
-          <span class="pt-coord">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</span>
-          <button class="del-btn" onclick="removePt(${i})">삭제</button>
-        </div>
-      `).join('');
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
+          <span style="display:inline-block;width:22px;height:22px;border-radius:50%;
+                       background:${p.color};color:#fff;font-size:.8rem;
+                       display:flex;align-items:center;justify-content:center;">${i+1}</span>
+          <span style="flex:1;">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</span>
+          <button onclick="removePt(${i})">삭제</button>
+        </div>`).join('');
   }
   window.removePt = i => { pts[i].marker.setMap(null); pts.splice(i,1); redraw(); };
 
-  /* 🧹 전체 지우기 */
+  /* 🧹 전체 지우기 & 모드 초기화(랜덤) */
   document.getElementById('reset-btn').onclick = () => {
     pts.forEach(p=>p.marker.setMap(null)); pts.length = 0;
-    lines.forEach(l=>l.setMap(null));      lines.length= 0;
+    lines.forEach(l=>l.setMap(null));      lines.length = 0;
     if (centerMk) centerMk.setMap(null);
+    manualMode   = false;
+    currentColor = randomColor();
+    colorPicker.value = currentColor;
     redraw();
   };
 
