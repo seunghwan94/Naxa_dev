@@ -4,8 +4,8 @@
 .palette-panel { display:flex; align-items:center; gap:1rem; margin:1rem 0 2rem; }
 .palette-panel label { color: var(--text-secondary);}
 #colorPicker { width:32px; height:32px; border:none; border-radius:8px; background: var(--surface-2);}
-#reset-btn, #capture-btn { padding:0.5rem 1.1rem; border:none; background:var(--gradient-2); color:white; border-radius: 8px; font-weight:600; margin-left:0.3rem;}
-#reset-btn:hover, #capture-btn:hover { background:var(--gradient-1); }
+#reset-btn, #capture-btn, #loc-btn { padding:0.5rem 1.1rem; border:none; background:var(--gradient-2); color:white; border-radius: 8px; font-weight:600; margin-left:0.3rem;}
+#reset-btn:hover, #capture-btn:hover, #loc-btn:hover { background:var(--gradient-1); }
 .points-list { margin:2rem 0 0; }
 .pt-row { display:flex; align-items:center; gap:0.8rem; margin-bottom:8px; }
 .pt-no { display:inline-block; width:28px; height:28px; border-radius:8px; text-align:center; line-height:28px; color:#fff; font-weight:600; margin-right:6px;}
