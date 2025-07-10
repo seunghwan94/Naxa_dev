@@ -7,7 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 $routes->get('/qr', 'Qr::index');
-$routes->get('/mapcenter', 'Mapcenter::index');
+$routes->get('/map', 'Mapcenter::index');
 // Routes.php
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
     $routes->get ('geocode',  'NaverProxy::geocode');

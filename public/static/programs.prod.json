@@ -9,16 +9,24 @@
   {
     "title": "Naxa Post – Dev Notes",
     "url": "https://post.naxa.dev",
-    "description": "개발 메모 & 테스트용 미니 게시판",
-    "detail": "Node.js · Express · SQLite",
+    "description": "개발 메모 게시판",
+    "detail": "내가 사용하기 위한 개발 메모용 게시판",
     "img": "./static/img/post.png"
   },
   {
-    "title": "m/place Canvas",
-    "url": "https://place.naxa.dev",
-    "description": "실시간 픽셀 협업 캔버스",
-    "detail": "Node.js + Socket.IO 기반",
-    "img": "https://yourcdn.com/images/place.png"
+    "title": "Map Center [거리 중심 찾기]",
+    "url": "https://naxa.dev/map",
+    "description": "여러 좌표의 '거리 중심' 계산",
+    "detail": "NAVER Maps를 사용하여 거리 중심 찾는 사이트",
+    "img": "/static/img/map.png"
+  },
+  {
+    "title": "Dev Tools",
+    "url": "https://www.naxa.dev/tools",
+    "description": "내가 필요해서 만든 사이트",
+    "detail": "이것 저것 기타 등등 여러가지 기능",
+    "img": "/static/img/tools.png"
+
   },
   {
     "title": "개인 블로그",
